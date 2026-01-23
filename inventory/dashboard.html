@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dashboard</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav>
+  <span>TrimsInventory</span>
+  <a href="#" onclick="openDashboard()">Dashboard</a>
+  <a href="entry.html">Entry</a>
+  <a href="issue.html">Issue</a>
+  <a href="search.html">Search</a>
+  <button onclick="logout()">Logout</button>
+</nav>
+
+<div class="container">
+
+  <div class="alert">
+    LOW STOCK WARNING: TRIM-002, TRIM-001
+  </div>
+
+  <div class="stats">
+    <div class="box">Total Materials<br><b>2</b></div>
+    <div class="box">Entered Today<br><b>0</b></div>
+    <div class="box">Issued Today<br><b>0</b></div>
+  </div>
+
+  <table>
+    <tr>
+      <th>Material</th>
+      <th>Balance</th>
+      <th>Location</th>
+      <th>Action</th>
+    </tr>
+    <tr>
+      <td>TRIM-002</td>
+      <td>50</td>
+      <td>B2-15</td>
+      <td><button class="danger">Delete</button></td>
+    </tr>
+    <tr>
+      <td>TRIM-001</td>
+      <td>100</td>
+      <td>A1-01</td>
+      <td><button class="danger">Delete</button></td>
+    </tr>
+  </table>
+
+</div>
+
+<script src="js/auth.js"></script>
+<script>
+  protectDashboard();
+</script>
+</body>
+</html>
