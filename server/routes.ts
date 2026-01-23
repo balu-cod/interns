@@ -10,8 +10,8 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   // Setup Auth
-  await setupAuth(app);
-  registerAuthRoutes(app);
+  //await setupAuth(app);
+  //registerAuthRoutes(app);
 
   // Material Routes
   app.get(api.materials.list.path, async (req, res) => {
