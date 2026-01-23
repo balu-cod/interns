@@ -1,4 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
+import cors from "cors";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
@@ -12,6 +13,23 @@ declare module "http" {
   }
 }
 
+/**
+ * ✅ CORS FIX (IMPORTANT)
+ * Allow frontend (static site) to call backend (web service)
+ */
+app.use(
+  cors({
+    origin: [
+      "https://interns-klu8.onrender.com", // ✅ your frontend Render static site
+      "http://localhost:5173", // ✅ for local development (Vite)
+    ],
+    credentials: true,
+  }),
+);
+
+/**
+ * ✅ Parse JSON body + store rawBody for special cases
+ */
 app.use(
   express.json({
     verify: (req, _res, buf) => {
@@ -33,6 +51,9 @@ export function log(message: string, source = "express") {
   console.log(`${formattedTime} [${source}] ${message}`);
 }
 
+/**
+ * ✅ API request logging middleware
+ */
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -59,9 +80,15 @@ app.use((req, res, next) => {
   next();
 });
 
+/**
+ * ✅ Start server
+ */
 (async () => {
   await registerRoutes(httpServer, app);
 
+  /**
+   * ✅ Error handler (always return JSON)
+   */
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
@@ -75,9 +102,10 @@ app.use((req, res, next) => {
     return res.status(status).json({ message });
   });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
+  /**
+   * ✅ Serve frontend in production (only if you want backend to serve UI)
+   * Since you already deployed frontend separately, this is OK to keep.
+   */
   if (process.env.NODE_ENV === "production") {
     serveStatic(app);
   } else {
@@ -85,11 +113,11 @@ app.use((req, res, next) => {
     await setupVite(httpServer, app);
   }
 
-  // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
+  /**
+   * ✅ Listen on Render PORT
+   */
   const port = parseInt(process.env.PORT || "5000", 10);
+
   httpServer.listen(
     {
       port,
