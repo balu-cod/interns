@@ -107,7 +107,7 @@ app.use((req, res, next) => {
    * Since you already deployed frontend separately, this is OK to keep.
    */
   if (process.env.NODE_ENV === "production") {
-    serveStatic(app);
+    //serveStatic(app);
   } else {
     const { setupVite } = await import("./vite");
     await setupVite(httpServer, app);
