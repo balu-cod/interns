@@ -3,7 +3,7 @@ import { api, buildUrl } from "@shared/routes";
 import { z } from "zod";
 
 // ✅ Backend base URL (from Render env var)
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL!;
 
 type Material = z.infer<typeof api.materials.get.responses[200]>;
 type CreateMaterialInput = z.infer<typeof api.materials.create.input>;
