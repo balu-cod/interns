@@ -31,7 +31,7 @@ app.use(
 );
 
 // ✅ IMPORTANT: allow preflight
-app.options("*", cors());
+app.options("/", cors());
 
 
 
