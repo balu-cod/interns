@@ -14,7 +14,6 @@ import { Link, useLocation } from "wouter";
 
 // Extend schema to include transaction details (enteredBy)
 const entryFormSchema = insertMaterialSchema.extend({
-  enteredBy: z.string().min(1, "Name is required"),
   quantity: z.coerce.number().min(1, "Quantity must be at least 1"),
 });
 
@@ -34,7 +33,6 @@ export default function Entry() {
       quantity: 0,
       rackId: "",
       binNumber: "",
-      enteredBy: "",
     },
   });
 
@@ -56,7 +54,7 @@ export default function Entry() {
         quantity: data.quantity,
         rackId: data.rackId,
         binNumber: data.binNumber,
-        personName: data.enteredBy,
+        personName: "SYSTEM",
       });
 
       toast({
@@ -173,22 +171,7 @@ export default function Entry() {
                 </div>
               </div>
 
-              <div className="pt-4 border-t">
-                <FormField
-                  control={form.control}
-                  name="enteredBy"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Entered By</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Your Name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
+             
               <div className="flex justify-end gap-4 pt-4">
                 <Link href="/">
                   <Button type="button" variant="outline">Cancel</Button>
