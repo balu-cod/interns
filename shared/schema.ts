@@ -27,7 +27,10 @@ export const transactions = pgTable("transactions", {
 });
 
 // === BASE SCHEMAS ===
-export const insertMaterialSchema = createInsertSchema(materials).omit({ id: true, lastUpdated: true });
+export const insertMaterialSchema = createInsertSchema(materials, {
+  name: (schema) => schema.optional(),
+}).omit({ id: true, lastUpdated: true });
+
 export const insertTransactionSchema = createInsertSchema(transactions).omit({ id: true, timestamp: true });
 
 // === EXPLICIT API CONTRACT TYPES ===
