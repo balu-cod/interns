@@ -56,25 +56,25 @@ export function useCreateMaterial() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: CreateMaterialInput) => {
+    mutationFn: async (data: CreateMaterialInput & any) => {
+      // ✅ ONLY send fields that exist in DB
       const payload = {
-        ...data,
+        materialCode: data.materialCode,
         quantity: Number(data.quantity),
+        rackId: data.rackId,
+        binNumber: data.binNumber,
       };
 
       const res = await fetch(withBaseUrl(api.materials.create.path), {
         method: api.materials.create.method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
-        
+        credentials: "include",
       });
 
       if (!res.ok) {
-        if (res.status === 400) {
-          const error = await res.json();
-          throw new Error(error.message || "Validation failed");
-        }
-        throw new Error("Failed to create material");
+        const text = await res.text(); // 👈 important for debugging
+        throw new Error(text || "Failed to create material");
       }
 
       return api.materials.create.responses[201].parse(await res.json());
