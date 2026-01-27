@@ -21,11 +21,11 @@ app.use(
   cors({
     origin: (origin, callback) => {
       const allowedOrigins = [
-        "https://interns-klu8.onrender.com", // frontend (Render static site)
-        "http://localhost:5173",             // local dev
+        "https://interns-klu8.onrender.com",   // frontend (static site)
+        "http://localhost:5173",               // local dev
       ];
 
-      // ✅ Allow browser + Render internal health checks
+      // allow server-to-server, curl, render health checks
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
@@ -33,8 +33,9 @@ app.use(
       }
     },
     credentials: true,
-  }),
+  })
 );
+
 
 /**
  * ✅ Parse JSON body + store rawBody for special cases
