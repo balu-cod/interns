@@ -21,15 +21,15 @@ app.use(
   cors({
     origin: (origin, callback) => {
       const allowedOrigins = [
-        "https://interns-klu8.onrender.com",   // frontend (static site)
-        "http://localhost:5173",               // local dev
+        "https://interns-klu8.onrender.com", // frontend (Render static)
+        "http://localhost:5173",             // local dev
       ];
 
-      // allow server-to-server, curl, render health checks
+      // Allow browser requests + Render health checks
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        callback(new Error("CORS blocked"));
+        callback(new Error("CORS blocked: " + origin));
       }
     },
     credentials: true,
