@@ -27,7 +27,7 @@ export function useMaterials(search?: string) {
         : withBaseUrl(api.materials.list.path);
 
       const res = await fetch(url, {
-        credentials: "include",
+       
       });
 
       if (!res.ok) throw new Error("Failed to fetch materials");
@@ -66,7 +66,7 @@ export function useCreateMaterial() {
         method: api.materials.create.method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
-        credentials: "include",
+        
       });
 
       if (!res.ok) {
@@ -96,7 +96,7 @@ export function useUpdateMaterial() {
         method: api.materials.update.method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updates),
-        credentials: "include",
+        
       });
 
       if (!res.ok) throw new Error("Failed to update material");
