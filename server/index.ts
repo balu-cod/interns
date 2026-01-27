@@ -20,22 +20,19 @@ declare module "http" {
  */
 app.use(
   cors({
-    origin: (origin, callback) => {
-      const allowedOrigins = [
-        "https://interns-klu8.onrender.com", // frontend (Render static)
-        "http://localhost:5173",             // local dev
-      ];
-
-      // Allow browser requests + Render health checks
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("CORS blocked: " + origin));
-      }
-    },
+    origin: [
+      "https://interns-klu8.onrender.com", // frontend
+      "http://localhost:5173",
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   })
 );
+
+// ✅ IMPORTANT: allow preflight
+app.options("*", cors());
+
 
 
 /**
