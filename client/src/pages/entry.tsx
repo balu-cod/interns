@@ -29,7 +29,6 @@ export default function Entry() {
     resolver: zodResolver(entryFormSchema),
     defaultValues: {
       materialCode: "",
-      name: "",
       quantity: 0,
       rackId: "",
       binNumber: "",
