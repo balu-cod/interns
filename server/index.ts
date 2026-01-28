@@ -1,8 +1,6 @@
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 import express, { type Request, Response, NextFunction } from "express";
 import cors from "cors";
 import { registerRoutes } from "./routes";
-import { serveStatic } from "./static";
 import { createServer } from "http";
 
 const app = express();
@@ -14,58 +12,31 @@ declare module "http" {
   }
 }
 
-/**
- * ✅ CORS FIX (IMPORTANT)
- * Allow frontend (static site) to call backend (web service)
- */
+// ✅ SIMPLE, SAFE CORS
 app.use(
   cors({
-    origin: [
-      "https://interns-klu8.onrender.com", // frontend
-      "http://localhost:5173",
-    ],
+    origin: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true,
+    allowedHeaders: ["Content-Type"],
   })
 );
 
-// ✅ IMPORTANT: allow preflight
-app.options("/", cors());
-
-
-
-/**
- * ✅ Parse JSON body + store rawBody for special cases
- */
+// ✅ JSON parsing
 app.use(
   express.json({
     verify: (req, _res, buf) => {
       req.rawBody = buf;
     },
-  }),
+  })
 );
 
 app.use(express.urlencoded({ extended: false }));
 
-export function log(message: string, source = "express") {
-  const formattedTime = new Date().toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: true,
-  });
-
-  console.log(`${formattedTime} [${source}] ${message}`);
-}
-
-/**
- * ✅ API request logging middleware
- */
+// ✅ API logging
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
+  let capturedJsonResponse: any;
 
   const originalResJson = res.json;
   res.json = function (bodyJson, ...args) {
@@ -74,66 +45,29 @@ app.use((req, res, next) => {
   };
 
   res.on("finish", () => {
-    const duration = Date.now() - start;
     if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      log(logLine);
+      console.log(
+        `${req.method} ${path} ${res.statusCode} in ${Date.now() - start}ms`,
+        capturedJsonResponse ?? ""
+      );
     }
   });
 
   next();
 });
 
-/**
- * ✅ Start server
- */
 (async () => {
   await registerRoutes(httpServer, app);
 
-  /**
-   * ✅ Error handler (always return JSON)
-   */
+  // ✅ Error handler
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-
-    console.error("Internal Server Error:", err);
-
-    if (res.headersSent) {
-      return next(err);
-    }
-
-    return res.status(status).json({ message });
+    console.error(err);
+    if (res.headersSent) return next(err);
+    res.status(err.status || 500).json({ message: err.message || "Internal Server Error" });
   });
 
-  /**
-   * ✅ Serve frontend in production (only if you want backend to serve UI)
-   * Since you already deployed frontend separately, this is OK to keep.
-   */
-  if (process.env.NODE_ENV === "production") {
-    //serveStatic(app);
-  } else {
-    const { setupVite } = await import("./vite");
-    await setupVite(httpServer, app);
-  }
-
-  /**
-   * ✅ Listen on Render PORT
-   */
-  const port = parseInt(process.env.PORT || "5000", 10);
-
-  httpServer.listen(
-    {
-      port,
-      host: "0.0.0.0",
-      reusePort: true,
-    },
-    () => {
-      log(`serving on port ${port}`);
-    },
-  );
+  const port = Number(process.env.PORT || 5000);
+  httpServer.listen(port, "0.0.0.0", () => {
+    console.log(`🚀 Server running on port ${port}`);
+  });
 })();
