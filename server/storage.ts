@@ -1,139 +1,136 @@
 import { db } from "./db";
-import {
-  materials,
-  transactions,
-  type Material,
-  type Transaction,
-  type CreateMaterialRequest,
-  type CreateTransactionRequest,
-  type UpdateMaterialRequest,
-  type DashboardStats,
-  type SearchParams,
-} from "@shared/schema";
-import { eq, like, desc, sql, and, gte, lt } from "drizzle-orm";
-import { authStorage, type IAuthStorage } from "./replit_integrations/auth/storage";
+import { materials, transactions } from "@shared/schema";
+import { eq, ilike, sql } from "drizzle-orm";
 
-export interface IStorage extends IAuthStorage {
-  // Material Operations
-  getMaterials(params?: SearchParams): Promise<Material[]>;
-  getMaterialByCode(code: string): Promise<Material | undefined>;
-  createMaterial(material: CreateMaterialRequest): Promise<Material>;
-  updateMaterial(id: number, updates: UpdateMaterialRequest): Promise<Material>;
-  deleteMaterial(id: number): Promise<void>;
+export const storage = {
+  // =======================
+  // MATERIALS
+  // =======================
 
-  // Transaction Operations
-  getTransactions(): Promise<Transaction[]>;
-  createTransaction(transaction: CreateTransactionRequest): Promise<Transaction>;
-
-  // Stats
-  getStats(): Promise<DashboardStats>;
-}
-
-export class DatabaseStorage implements IStorage {
-  // Re-export auth methods
-  getUser = authStorage.getUser;
-  upsertUser = authStorage.upsertUser;
-
-  // Material Methods
-  async getMaterials(params?: SearchParams): Promise<Material[]> {
+  async getMaterials(params?: { query?: string }) {
     if (params?.query) {
-      const search = `%${params.query}%`;
+      const q = `%${params.query}%`;
       return await db
         .select()
         .from(materials)
         .where(
-          sql`${materials.materialCode} ILIKE ${search} OR ${materials.rackId} ILIKE ${search} OR ${materials.name} ILIKE ${search}`
-        )
-        .orderBy(desc(materials.lastUpdated));
+          sql`
+            ${materials.materialCode} ILIKE ${q}
+            OR ${materials.name} ILIKE ${q}
+            OR ${materials.rackId} ILIKE ${q}
+          `
+        );
     }
-    return await db.select().from(materials).orderBy(desc(materials.lastUpdated));
-  }
 
-  async getMaterialByCode(code: string): Promise<Material | undefined> {
-    const [material] = await db
+    return await db.select().from(materials);
+  },
+
+  async getMaterialByCode(code: string) {
+    const result = await db
       .select()
       .from(materials)
-      .where(eq(materials.materialCode, code));
-    return material;
-  }
+      .where(eq(materials.materialCode, code))
+      .limit(1);
 
-  async createMaterial(insertMaterial: CreateMaterialRequest): Promise<Material> {
-    const [material] = await db
+    return result[0] ?? null;
+  },
+
+  async createMaterial(data: {
+    materialCode: string;
+    name?: string;
+    quantity: number;
+    rackId: string;
+    binNumber: string;
+  }) {
+    const result = await db
       .insert(materials)
-      .values(insertMaterial)
+      .values(data)
       .returning();
-    return material;
-  }
 
-  async updateMaterial(id: number, updates: UpdateMaterialRequest): Promise<Material> {
-    const [updated] = await db
+    return result[0];
+  },
+
+  async updateMaterial(
+    id: number,
+    data: Partial<{
+      quantity: number;
+      rackId: string;
+      binNumber: string;
+      name?: string;
+    }>
+  ) {
+    const result = await db
       .update(materials)
-      .set({ ...updates, lastUpdated: new Date() })
+      .set({
+        ...data,
+        lastUpdated: new Date(),
+      })
       .where(eq(materials.id, id))
       .returning();
-    return updated;
-  }
 
-  async deleteMaterial(id: number): Promise<void> {
-    await db.delete(materials).where(eq(materials.id, id));
-  }
+    return result[0];
+  },
 
-  // Transaction Methods
-  async getTransactions(): Promise<Transaction[]> {
+  // =======================
+  // TRANSACTIONS
+  // =======================
+
+  async getTransactions() {
     return await db
       .select()
       .from(transactions)
-      .orderBy(desc(transactions.timestamp))
-      .limit(50); // Limit to recent 50
-  }
+      .orderBy(sql`${transactions.timestamp} DESC`);
+  },
 
-  async createTransaction(insertTransaction: CreateTransactionRequest): Promise<Transaction> {
-    const [transaction] = await db
+  async createTransaction(data: {
+    materialCode: string;
+    type: "ENTRY" | "ISSUE";
+    quantity: number;
+    rackId?: string;
+    binNumber?: string;
+    personName: string;
+  }) {
+    const result = await db
       .insert(transactions)
-      .values(insertTransaction)
+      .values(data)
       .returning();
-    return transaction;
-  }
 
-  // Stats
-  async getStats(): Promise<DashboardStats> {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    return result[0];
+  },
 
-    const [totalMaterialsResult] = await db
+  // =======================
+  // DASHBOARD STATS
+  // =======================
+
+  async getStats() {
+    const totalMaterials = await db
       .select({ count: sql<number>`count(*)` })
       .from(materials);
 
-    const [enteredTodayResult] = await db
-      .select({ sum: sql<number>`sum(${transactions.quantity})` })
+    const enteredToday = await db
+      .select({ count: sql<number>`count(*)` })
       .from(transactions)
       .where(
-        and(
-          eq(transactions.type, 'ENTRY'),
-          gte(transactions.timestamp, today),
-          lt(transactions.timestamp, tomorrow)
-        )
+        sql`
+          ${transactions.type} = 'ENTRY'
+          AND ${transactions.timestamp}::date = CURRENT_DATE
+        `
       );
 
-    const [issuedTodayResult] = await db
-      .select({ sum: sql<number>`sum(${transactions.quantity})` })
+    const issuedToday = await db
+      .select({ count: sql<number>`count(*)` })
       .from(transactions)
       .where(
-        and(
-          eq(transactions.type, 'ISSUE'),
-          gte(transactions.timestamp, today),
-          lt(transactions.timestamp, tomorrow)
-        )
+        sql`
+          ${transactions.type} = 'ISSUE'
+          AND ${transactions.timestamp}::date = CURRENT_DATE
+        `
       );
 
     return {
-      totalMaterials: Number(totalMaterialsResult?.count || 0),
-      enteredToday: Number(enteredTodayResult?.sum || 0),
-      issuedToday: Number(issuedTodayResult?.sum || 0),
+      totalMaterials: Number(totalMaterials[0].count),
+      enteredToday: Number(enteredToday[0].count),
+      issuedToday: Number(issuedToday[0].count),
     };
-  }
-}
-
-export const storage = new DatabaseStorage();
+  },
+};
