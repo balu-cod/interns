@@ -105,6 +105,10 @@ export function useUpdateMaterial() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.materials.list.path] });
+      app.get("/materials", (req, res) => {
+  res.json({ message: "Materials route is alive" });
+});
+
     },
   });
 }
